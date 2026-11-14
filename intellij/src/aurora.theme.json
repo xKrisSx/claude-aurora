@@ -3,8 +3,8 @@
   "dark": true,
   "author": "xKrisSx",
   "editorScheme": "/AuroraScheme.xml",
-  "background": { "image": "/aurora-bg.jpg", "transparency": 14, "fill": "scale", "anchor": "center" },
-  "emptyFrameBackground": { "image": "/aurora-bg.jpg", "transparency": 70, "fill": "scale", "anchor": "center" },
+  "background": { "image": "aurora-bg.jpg", "transparency": 14, "fill": "scale", "anchor": "center" },
+  "emptyFrameBackground": { "image": "aurora-bg.jpg", "transparency": 70, "fill": "scale", "anchor": "center" },
   "colors": {
     "bg": "#0b0c10",
     "bgAlt": "#101217",
