@@ -56,11 +56,9 @@ export const register: Register = on => {
       name: 'aurora',
       description: 'Change the aurora colours: /aurora (random) or /aurora <name>',
     })
-    const set = await show($, pickOther())
-
-    if (!set.isDrawn) {
-      $.ui.status(set.reason)
-    }
+    // A surface that attaches later (the app, or a phone over Remote Control)
+    // draws the theme then, so a terminal start is no cause for a message.
+    await show($, pickOther())
     $.clock.every(ROTATE_MS, () => void show($, pickOther()))
 
     return next(e)
