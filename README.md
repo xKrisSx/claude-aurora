@@ -26,6 +26,10 @@ The aurora doesn't have to be green. It comes in seven colour sets:
 - Every 20 minutes it switches to a different one on its own.
 - `/aurora` picks a new random one right away, and `/aurora fire` (or any name above) picks that one.
 
+## In the terminal
+
+Terminals can't draw the full backdrop, so when you run `claude` in a terminal (Windows Terminal, IntelliJ, VS Code, iTerm…) you get a small pixel-art version instead: a five-row band above the prompt with twinkling stars, the aurora in its current colours and a mountain ridge, gently moving. Collapse it with the band's `[-]` if you want the space back. It looks best in a terminal with 24-bit colour.
+
 ## Install
 
 In a Claude Code session in a terminal:
@@ -43,6 +47,16 @@ claude plugin install aurora --marketplace xKrisSx/claude-aurora
 ```
 
 In the desktop app: click **+** next to the message box, then **Plugins**, **Add marketplace**, enter `xKrisSx/claude-aurora`, then **Add plugin**.
+
+## IntelliJ theme
+
+There is a matching theme for IntelliJ IDEA and the other JetBrains IDEs in [`intellij/`](intellij): a near-black UI with an aurora-green accent, aurora-tinted syntax and terminal colours, and a faint starry sky with the aurora and misty mountains behind the editor and tool windows.
+
+1. Download [`intellij/aurora-intellij-theme.jar`](intellij/aurora-intellij-theme.jar).
+2. In the IDE: **Settings → Plugins → ⚙ → Install Plugin from Disk…** and pick the jar.
+3. Choose **Aurora** in **Settings → Appearance & Behavior → Appearance → Theme**.
+
+To make the background image stronger or fainter, change its transparency under **Settings → Appearance & Behavior → Appearance → Background Image…**. Rebuild the jar from `intellij/src` with `jar cf aurora-intellij-theme.jar -C src .`.
 
 ## Notes
 

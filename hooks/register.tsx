@@ -1,10 +1,14 @@
 import type { EngineInterface, Register, ThemeSetArgs } from 'claude-code'
 
 import { makeColors } from './make-colors.js'
+import { BAND_ROWS, frame } from './band'
 import { PALETTES, sceneFor } from './palettes'
 
 /** How often the aurora changes colour on its own. */
 const ROTATE_MS = 20 * 60 * 1000
+
+/** How often the terminal band moves. */
+const BAND_MS = 150
 
 // Near-black night: neutral surfaces with only a breath of cool blue.
 const { theme, problems } = makeColors({
@@ -28,6 +32,13 @@ const { theme, problems } = makeColors({
 })
 
 let current = ''
+
+/** Where the terminal band is mounted, so the timer can repaint it. */
+let band: { requestId: string; columns: number } | undefined
+const bornAt = Date.now()
+
+const palette = () => PALETTES.find(p => p.id === current) ?? PALETTES[0]!
+const seconds = () => (Date.now() - bornAt) / 1000
 
 function pickOther(): string {
   const others = PALETTES.filter(p => p.id !== current)
@@ -59,7 +70,15 @@ export const register: Register = on => {
     // A surface that attaches later (the app, or a phone over Remote Control)
     // draws the theme then, so a terminal start is no cause for a message.
     await show($, pickOther())
-    $.clock.every(ROTATE_MS, () => void show($, pickOther()))
+    $.clock.every(ROTATE_MS, () => {
+      void show($, pickOther())
+    })
+    $.clock.every(BAND_MS, () => {
+      if (band !== undefined) {
+        const { requestId, columns } = band
+        void $.ui.blit({ requestId, key: 'sky', columns, rows: BAND_ROWS, cells: frame(columns, seconds(), palette()) })
+      }
+    })
 
     return next(e)
   })
@@ -76,6 +95,18 @@ export const register: Register = on => {
     const name = PALETTES.find(p => p.id === id)!.name
 
     return { text: `Aurora: ${name}. Available: ${list}` }
+  })
+
+  // In the terminal, where no backdrop draws: a moving sky above the prompt.
+  on('ui.render', { component: 'AbovePrompt' }, ($, e, next) => {
+    if (e.surface !== 'terminal' || e.props.hasSurvey) {
+      return next(e)
+    }
+    const { Raster } = $.ui.resolve(e)
+    const columns = Math.max(1, Math.min(512, e.props.bodyColumns))
+    band = { requestId: e.requestId, columns }
+
+    return <Raster key="sky" columns={columns} rows={BAND_ROWS} cells={frame(columns, seconds(), palette())} />
   })
 
   on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
