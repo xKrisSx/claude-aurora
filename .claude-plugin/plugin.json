@@ -1,1 +1,14 @@
-{ "name": "zorza", "version": "0.1.0", "description": "Ciemny motyw: niebo pełne gwiazd, zorza polarna i góry we mgle", "license": "MIT" }
+{
+  "name": "aurora",
+  "version": "0.2.0",
+  "description": "Dark theme for the Claude apps: a starry sky, a colour-shifting aurora and misty mountains",
+  "license": "MIT",
+  "keywords": [
+    "theme",
+    "dark-theme",
+    "aurora",
+    "northern-lights",
+    "astronomy",
+    "stars"
+  ]
+}

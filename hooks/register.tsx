@@ -8,7 +8,7 @@ const ROTATE_MS = 20 * 60 * 1000
 
 // Near-black night: neutral surfaces with only a breath of cool blue.
 const { theme, problems } = makeColors({
-  label: 'Zorza',
+  label: 'Aurora',
   only: 'dark',
   roles: { accent: '#3ee0a8', danger: '#f0607a', success: '#7fe08a', warning: '#f2c25b', pro: '#a98bff' },
   codeTheme: { dark: 'nord' },
@@ -40,7 +40,7 @@ async function show($: EngineInterface, id: string) {
   const look: ThemeSetArgs = {
     colors: theme,
     overrideColorScheme: 'dark',
-    backdrop: { scene: `zorza-${id}`, glass: { blur: 18, tint: '#07080b', opacity: 0.62 } },
+    backdrop: { scene: `aurora-${id}`, glass: { blur: 18, tint: '#07080b', opacity: 0.62 } },
   }
   return $.theme.set(look)
 }
@@ -53,8 +53,8 @@ export const register: Register = on => {
       $.ui.toast(unpainted)
     }
     await $.command.register({
-      name: 'zorza',
-      description: 'Zmień kolory zorzy: /zorza (losowe) lub /zorza <nazwa>',
+      name: 'aurora',
+      description: 'Change the aurora colours: /aurora (random) or /aurora <name>',
     })
     const set = await show($, pickOther())
 
@@ -66,28 +66,28 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'zorza' }, async ($, e) => {
+  on('command.run', { command: 'aurora' }, async ($, e) => {
     const wanted = e.args.trim().toLowerCase()
     const list = PALETTES.map(p => p.id).join(', ')
 
     if (wanted !== '' && !PALETTES.some(p => p.id === wanted)) {
-      return { text: `Nie znam zorzy „${wanted}”. Dostępne: ${list}` }
+      return { text: `Unknown aurora "${wanted}". Available: ${list}` }
     }
     const id = wanted === '' ? pickOther() : wanted
     await show($, id)
     const name = PALETTES.find(p => p.id === id)!.name
 
-    return { text: `Zorza: ${name}. Dostępne: ${list}` }
+    return { text: `Aurora: ${name}. Available: ${list}` }
   })
 
   on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
-    const id = e.props.scene.startsWith('zorza-') ? e.props.scene.slice('zorza-'.length) : ''
+    const id = e.props.scene.startsWith('aurora-') ? e.props.scene.slice('aurora-'.length) : ''
 
     if ((e.surface !== 'desktop' && e.surface !== 'mobile') || !PALETTES.some(p => p.id === id)) {
       return next(e)
     }
     const { Svg } = $.ui.resolve(e)
 
-    return <Svg source={sceneFor(id)} alt="Zorza polarna nad górami we mgle, pod rozgwieżdżonym niebem" isInteractive />
+    return <Svg source={sceneFor(id)} alt="Northern lights over misty mountains under a starry sky" isInteractive />
   })
 }

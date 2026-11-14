@@ -1,37 +1,55 @@
-# Zorza: motyw dla Claude
+# Aurora: a dark theme for Claude
 
-Ciemny, prawie czarny motyw dla aplikacji Claude (desktop i mobile). W tle animowane, rozgwieżdżone niebo ze spadającymi gwiazdami, zorza polarna i niskie góry we mgle.
+A near-black theme for the Claude desktop and mobile apps. Behind the conversation there is an animated night sky:
 
-A dark, near-black theme for the Claude desktop and mobile apps: an animated starry sky, an aurora and low mountains in drifting fog.
+- **Stars** that slowly twinkle, a faint Milky Way and the occasional shooting star
+- **Northern lights** in curtains that sway and shimmer with vertical rays
+- **Low mountain ridges** with drifting fog between them
 
-## Kolory zorzy
+The interface itself goes almost black, with a soft frosted glass over the sky so text stays easy to read, an aurora-green accent and Nord-style code highlighting.
 
-Zorza ma 7 zestawów kolorów: `klasyczna`, `ognista`, `lodowa`, `neonowa`, `kosmiczna`, `toksyczna`, `krwawa`.
+## Seven auroras
 
-- przy starcie sesji kolor jest losowany,
-- co 20 minut zmienia się sam,
-- `/zorza` losuje nowy kolor od razu, `/zorza ognista` ustawia wybrany.
+The aurora doesn't have to be green. It comes in seven colour sets:
 
-## Instalacja
+| Name | Colours |
+| --- | --- |
+| `classic` | green and violet |
+| `fire` | red, orange and gold |
+| `ice` | blue, cyan and white |
+| `neon` | pink and cyan |
+| `cosmic` | violet, magenta and peach |
+| `toxic` | acid green and yellow |
+| `blood` | red and pink |
 
-W sesji Claude Code w terminalu:
+- A random one is picked each time a session starts.
+- Every 20 minutes it switches to a different one on its own.
+- `/aurora` picks a new random one right away, and `/aurora fire` (or any name above) picks that one.
+
+## Install
+
+In a Claude Code session in a terminal:
 
 ```
-/plugin install zorza --marketplace xKrisSx/claude-aurora
+/plugin install aurora --marketplace xKrisSx/claude-aurora
 ```
 
-Odpowiedz `y` na pytanie o dodanie marketplace, potem wybierz zakres (domyślny: user) klawiszem Enter.
+Answer `y` to add the marketplace, then press Enter to install for your user.
 
-Z powłoki:
+From a shell:
 
 ```
-claude plugin install zorza --marketplace xKrisSx/claude-aurora
+claude plugin install aurora --marketplace xKrisSx/claude-aurora
 ```
 
-W aplikacji desktop: kliknij + obok pola wiadomości, potem Plugins, Add marketplace i wpisz `xKrisSx/claude-aurora`, a następnie Add plugin.
+In the desktop app: click **+** next to the message box, then **Plugins**, **Add marketplace**, enter `xKrisSx/claude-aurora`, then **Add plugin**.
 
-Motyw rysuje się tylko w aplikacjach desktop i mobile (terminal i edytory go nie pokazują) i jest przeznaczony do trybu ciemnego.
+## Notes
 
-## Licencja
+- The theme draws in the Claude desktop and mobile apps. The terminal and editor extensions don't show themes.
+- It's made for dark mode.
+- If your system asks apps to reduce motion, the sky stays still.
 
-MIT, zobacz [LICENSE](LICENSE).
+## License
+
+MIT, see [LICENSE](LICENSE).
