@@ -1,0 +1,6 @@
+{
+  "name": "claude-aurora",
+  "description": "Zorza: ciemny motyw z zorzą polarną dla aplikacji Claude",
+  "owner": { "name": "xKrisSx" },
+  "plugins": [{ "name": "zorza", "source": "./" }]
+}
