@@ -60,9 +60,19 @@ function toBase64(bytes: Uint8Array): string {
 const SKY_TOP: RGB = [0, 0, 0]
 const SKY_LOW: RGB = [6, 8, 16]
 const STAR: RGB = [225, 232, 255]
-const FAR: RGB = [21, 25, 37]
-const NEAR: RGB = [5, 6, 9]
+// Mountain colours sit on a 17-step grid (0x11, 0x22, ...): some terminals,
+// IntelliJ's among them, round colours to 4 bits a channel, and a dark grey
+// off that grid rounds its green up and its blue down into a teal.
+const FAR: RGB = [17, 17, 34]
+const FAR_FOG: RGB = [34, 34, 51]
+const NEAR: RGB = [0, 0, 0]
 const FOG: RGB = [110, 120, 138]
+
+/** A dark grey-blue snapped to the grid: r = g = 17k, b = 17(k + 1). */
+const snapGrey = (c: RGB): RGB => {
+  const k = Math.max(0, Math.round(((c[0] + c[1] + c[2]) / 3 - 5.67) / 17))
+  return [17 * k, 17 * k, 17 * (k + 1)]
+}
 
 /**
  * One pixel of the scene at time `t` seconds. `level` is how strong the aurora
@@ -74,7 +84,7 @@ function pixel(x: number, y: number, h: number, t: number, level: number, p: Pal
   const far = ridge(x, 1.7, 1, 5)
   const near = ridge(x + 400, 4.2, 0.3, 2.6)
   if (fromBottom < near) return NEAR
-  if (fromBottom < far) return mix(FAR, FOG, 0.06 + 0.06 * Math.sin(x * 0.05 + t * 0.3))
+  if (fromBottom < far) return hash(x, 7) < 0.35 ? FAR_FOG : FAR // patches of fog, fixed so nothing flickers
 
   const v = y / (h - 1) // 0 at the top, 1 at the bottom
   let c = mix(SKY_TOP, SKY_LOW, v)
@@ -105,8 +115,11 @@ function pixel(x: number, y: number, h: number, t: number, level: number, p: Pal
   const tint = mix(top, low, Math.max(0, Math.min(1, (v - centre) * 2 + 0.5)))
   c = add(c, tint, 0.85 * glow)
 
-  // Fog hanging just above the far ridge.
-  if (above < 1.5) c = mix(c, FOG, 0.1 * (1.5 - above))
+  // Fog hanging just above the far ridge, snapped like the mountains where no aurora lights it.
+  if (above < 1.5) {
+    c = mix(c, FOG, 0.1 * (1.5 - above))
+    if (glow < 0.05) c = snapGrey(c)
+  }
 
   return c
 }
