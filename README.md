@@ -28,7 +28,15 @@ The aurora doesn't have to be green. It comes in seven colour sets:
 
 ## In the terminal
 
-Terminals can't draw the full backdrop, so when you run `claude` in a terminal (Windows Terminal, IntelliJ, VS Code, iTerm…) you get a small pixel-art version instead: a five-row band above the prompt with twinkling stars, the aurora in its current colours and a mountain ridge, gently moving. Collapse it with the band's `[-]` if you want the space back. It looks best in a terminal with 24-bit colour.
+Terminals can't draw the full backdrop, so when you run `claude` in a terminal (Windows Terminal, IntelliJ, VS Code, iTerm…) you get a small pixel-art version instead: a five-row band above the prompt with stars and a mountain ridge.
+
+The aurora only comes out while Claude is working. When a turn starts it fades in and sways, and when Claude is done it fades away and leaves a still night sky. While nothing moves, the band costs nothing to draw.
+
+- `/aurora band on`: the default described above
+- `/aurora band still`: a still sky with the aurora always up, never animated
+- `/aurora band off`: no band at all
+
+The choice is remembered across sessions. Collapse the band with its `[-]` to hide it for the moment. It looks best in a terminal with 24-bit colour.
 
 ## Install
 
@@ -50,13 +58,7 @@ In the desktop app: click **+** next to the message box, then **Plugins**, **Add
 
 ## IntelliJ theme
 
-There is a matching theme for IntelliJ IDEA and the other JetBrains IDEs in [`intellij/`](intellij): a near-black UI with an aurora-green accent, aurora-tinted syntax and terminal colours, and a faint starry sky with the aurora and misty mountains behind the editor and tool windows.
-
-1. Download [`intellij/aurora-intellij-theme.jar`](intellij/aurora-intellij-theme.jar).
-2. In the IDE: **Settings → Plugins → ⚙ → Install Plugin from Disk…** and pick the jar.
-3. Choose **Aurora** in **Settings → Appearance & Behavior → Appearance → Theme**.
-
-To make the background image stronger or fainter, change its transparency under **Settings → Appearance & Behavior → Appearance → Background Image…**. Rebuild the jar from `intellij/src` with `jar cf aurora-intellij-theme.jar -C src .`.
+Want the same aurora in your IDE? See [intellij-aurora](https://github.com/xKrisSx/intellij-aurora), a matching theme for IntelliJ IDEA and the other JetBrains IDEs.
 
 ## Notes
 

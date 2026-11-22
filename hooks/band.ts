@@ -64,16 +64,26 @@ const FAR: RGB = [21, 25, 37]
 const NEAR: RGB = [5, 6, 9]
 const FOG: RGB = [110, 120, 138]
 
-/** One pixel of the scene at time `t` seconds. */
-function pixel(x: number, y: number, h: number, t: number, p: Palette): RGB {
+/**
+ * One pixel of the scene at time `t` seconds. `level` is how strong the aurora
+ * is (0 = gone, 1 = full); stars twinkle with it, so at 0 the sky stands still.
+ */
+function pixel(x: number, y: number, h: number, t: number, level: number, p: Palette): RGB {
+  // Mountains first: a near ridge in front, a far one in fog behind it.
+  const fromBottom = h - 1 - y
+  const far = ridge(x, 1.7, 1, 5)
+  const near = ridge(x + 400, 4.2, 0.3, 2.6)
+  if (fromBottom < near) return NEAR
+  if (fromBottom < far) return mix(FAR, FOG, 0.06 + 0.06 * Math.sin(x * 0.05 + t * 0.3))
+
   const v = y / (h - 1) // 0 at the top, 1 at the bottom
   let c = mix(SKY_TOP, SKY_LOW, v)
 
-  // Stars: sparse, upper half, each twinkling at its own pace.
+  // Stars: sparse, upper half; they twinkle only while the aurora is up.
   const s = hash(x, y)
   if (s > 0.965 && v < 0.6) {
-    const tw = 0.55 + 0.45 * Math.sin(t * (1 + s * 3) + s * 40)
-    c = mix(c, STAR, 0.35 + 0.5 * tw)
+    const tw = 0.75 + 0.25 * level * Math.sin(t * (1 + s * 3) + s * 40)
+    c = mix(c, STAR, 0.3 + 0.55 * tw)
   }
 
   // Aurora: a wavering band whose centre drifts, with vertical rays.
@@ -82,42 +92,35 @@ function pixel(x: number, y: number, h: number, t: number, p: Palette): RGB {
   const body = Math.exp(-d * d)
   const rays = 0.72 + 0.28 * Math.sin(x * 1.3 + t * 1.2 + 2.5 * Math.sin(x * 0.17 + t * 0.3))
   const sweep = 0.5 + 0.5 * Math.sin(x * 0.018 - t * 0.2)
-  const glow = body * rays * sweep
+
+  // The glow fades out over the last two pixels above the ridge: a lit pixel in
+  // the top half of a cell whose bottom half is mountain can bleed into the
+  // mountain where the terminal's half-block glyph isn't exactly half a cell.
+  const above = fromBottom - far
+  const clearance = Math.max(0, Math.min(1, (above - 0.5) / 1.5))
+  const glow = body * rays * sweep * clearance * level
+
   const top = mix(hex(p.a[0]), hex(p.b[0]), 0.5 + 0.5 * Math.sin(x * 0.03 + t * 0.2))
   const low = mix(hex(p.a[1]), hex(p.b[1]), 0.5 + 0.5 * Math.sin(x * 0.025 - t * 0.15))
   const tint = mix(top, low, Math.max(0, Math.min(1, (v - centre) * 2 + 0.5)))
   c = add(c, tint, 0.85 * glow)
 
-  // Mountains: a far ridge in fog and a near one in front.
-  const fromBottom = h - 1 - y
-  const far = ridge(x, 1.7, 1, 5)
-  const near = ridge(x + 400, 4.2, 0.3, 2.6)
-  if (fromBottom < near) {
-    return NEAR
-  }
-  if (fromBottom < far) {
-    const fog = 0.06 + 0.06 * Math.sin(x * 0.05 + t * 0.3)
-    return mix(FAR, FOG, fog)
-  }
   // Fog hanging just above the far ridge.
-  const above = fromBottom - far
-  if (above < 1.5) {
-    c = mix(c, FOG, 0.1 * (1.5 - above))
-  }
+  if (above < 1.5) c = mix(c, FOG, 0.1 * (1.5 - above))
 
   return c
 }
 
-/** The band's cells for `columns` wide at time `t`, as RasterProps' base64. */
-export function frame(columns: number, t: number, p: Palette): string {
+/** The band's cells for `columns` wide, as RasterProps' base64. */
+export function frame(columns: number, t: number, level: number, p: Palette): string {
   const h = BAND_ROWS * 2
   const words = new Uint32Array(columns * BAND_ROWS * 3)
   for (let row = 0; row < BAND_ROWS; row++) {
     for (let x = 0; x < columns; x++) {
       const i = (row * columns + x) * 3
       words[i] = HALF
-      words[i + 1] = pack(pixel(x, row * 2, h, t, p))
-      words[i + 2] = pack(pixel(x, row * 2 + 1, h, t, p))
+      words[i + 1] = pack(pixel(x, row * 2, h, t, level, p))
+      words[i + 2] = pack(pixel(x, row * 2 + 1, h, t, level, p))
     }
   }
   return toBase64(new Uint8Array(words.buffer))

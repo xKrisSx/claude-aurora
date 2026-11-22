@@ -7,8 +7,19 @@ import { PALETTES, sceneFor } from './palettes'
 /** How often the aurora changes colour on its own. */
 const ROTATE_MS = 20 * 60 * 1000
 
-/** How often the terminal band moves. */
-const BAND_MS = 150
+/** One frame of the terminal band while it moves (4 frames a second). */
+const FRAME_MS = 250
+
+/** How much the aurora fades in or out per frame: 0 to full in about a second. */
+const FADE_STEP = 0.25
+
+/**
+ * The terminal band's mode, kept across sessions:
+ * on = the aurora rises while Claude works and fades to a still night sky when it stops,
+ * still = a still sky with the aurora always up, off = no band.
+ */
+type BandMode = 'on' | 'still' | 'off'
+const BAND_MODES: BandMode[] = ['on', 'still', 'off']
 
 // Near-black night: neutral surfaces with only a breath of cool blue.
 const { theme, problems } = makeColors({
@@ -33,12 +44,17 @@ const { theme, problems } = makeColors({
 
 let current = ''
 
-/** Where the terminal band is mounted, so the timer can repaint it. */
-let band: { requestId: string; columns: number } | undefined
-const bornAt = Date.now()
+// The terminal band. It only draws when something changed: while the aurora
+// is up or fading, or once after a palette change, resize or mode change.
+let band: { requestId: string; columns: number; isCollapsed: boolean } | undefined
+let mode: BandMode = 'on'
+let isWorking = false
+let level = 0     // aurora strength, 0 = gone, 1 = full
+let clock = 0     // the band's own time in seconds, frozen while the sky is still
+let isDirty = true
 
 const palette = () => PALETTES.find(p => p.id === current) ?? PALETTES[0]!
-const seconds = () => (Date.now() - bornAt) / 1000
+const shownLevel = () => (mode === 'still' ? 1 : level)
 
 function pickOther(): string {
   const others = PALETTES.filter(p => p.id !== current)
@@ -48,12 +64,35 @@ function pickOther(): string {
 
 async function show($: EngineInterface, id: string) {
   current = id
+  isDirty = true
   const look: ThemeSetArgs = {
     colors: theme,
     overrideColorScheme: 'dark',
     backdrop: { scene: `aurora-${id}`, glass: { blur: 18, tint: '#07080b', opacity: 0.62 } },
   }
   return $.theme.set(look)
+}
+
+/** One tick of the band: fade toward the target and repaint only if needed. */
+function tick($: EngineInterface) {
+  if (band === undefined || band.isCollapsed || mode === 'off') return
+
+  if (mode === 'on') {
+    const target = isWorking ? 1 : 0
+    if (level !== target) {
+      level = target > level ? Math.min(1, level + FADE_STEP) : Math.max(0, level - FADE_STEP)
+      isDirty = true
+    }
+    if (level > 0) {
+      clock += FRAME_MS / 1000
+      isDirty = true
+    }
+  }
+  if (!isDirty) return
+
+  isDirty = false
+  const { requestId, columns } = band
+  void $.ui.blit({ requestId, key: 'sky', columns, rows: BAND_ROWS, cells: frame(columns, clock, shownLevel(), palette()) })
 }
 
 export const register: Register = on => {
@@ -63,9 +102,12 @@ export const register: Register = on => {
     if (unpainted !== undefined) {
       $.ui.toast(unpainted)
     }
+    const stored = await $.store.get('band')
+    if (BAND_MODES.includes(stored as BandMode)) mode = stored as BandMode
+
     await $.command.register({
       name: 'aurora',
-      description: 'Change the aurora colours: /aurora (random) or /aurora <name>',
+      description: 'Aurora colours: /aurora, /aurora <name>; terminal band: /aurora band on|still|off',
     })
     // A surface that attaches later (the app, or a phone over Remote Control)
     // draws the theme then, so a terminal start is no cause for a message.
@@ -73,40 +115,63 @@ export const register: Register = on => {
     $.clock.every(ROTATE_MS, () => {
       void show($, pickOther())
     })
-    $.clock.every(BAND_MS, () => {
-      if (band !== undefined) {
-        const { requestId, columns } = band
-        void $.ui.blit({ requestId, key: 'sky', columns, rows: BAND_ROWS, cells: frame(columns, seconds(), palette()) })
-      }
-    })
+    $.clock.every(FRAME_MS, () => tick($))
 
     return next(e)
   })
 
+  on('turn.start', ($, e, next) => {
+    isWorking = true
+    return next(e)
+  })
+
+  on('turn.complete', ($, e, next) => {
+    isWorking = false
+    return next(e)
+  })
+
+  on('turn.abort', ($, e, next) => {
+    isWorking = false
+    return next(e)
+  })
+
   on('command.run', { command: 'aurora' }, async ($, e) => {
-    const wanted = e.args.trim().toLowerCase()
+    const [first = '', second = ''] = e.args.trim().toLowerCase().split(/\s+/)
     const list = PALETTES.map(p => p.id).join(', ')
 
-    if (wanted !== '' && !PALETTES.some(p => p.id === wanted)) {
-      return { text: `Unknown aurora "${wanted}". Available: ${list}` }
+    if (first === 'band') {
+      if (second === '') return { text: `Terminal band: ${mode}. Use /aurora band on|still|off` }
+      if (!BAND_MODES.includes(second as BandMode)) return { text: `Unknown band mode "${second}". Use on, still or off` }
+
+      mode = second as BandMode
+      isDirty = true
+      await $.store.set('band', mode)
+      $.ui.invalidate('ui.render')
+
+      return { text: `Terminal band: ${mode}` }
     }
-    const id = wanted === '' ? pickOther() : wanted
+    if (first !== '' && !PALETTES.some(p => p.id === first)) {
+      return { text: `Unknown aurora "${first}". Available: ${list}` }
+    }
+    const id = first === '' ? pickOther() : first
     await show($, id)
     const name = PALETTES.find(p => p.id === id)!.name
 
     return { text: `Aurora: ${name}. Available: ${list}` }
   })
 
-  // In the terminal, where no backdrop draws: a moving sky above the prompt.
+  // In the terminal, where no backdrop draws: a night sky above the prompt.
   on('ui.render', { component: 'AbovePrompt' }, ($, e, next) => {
-    if (e.surface !== 'terminal' || e.props.hasSurvey) {
+    if (e.surface !== 'terminal' || e.props.hasSurvey || mode === 'off') {
+      band = undefined
       return next(e)
     }
     const { Raster } = $.ui.resolve(e)
     const columns = Math.max(1, Math.min(512, e.props.bodyColumns))
-    band = { requestId: e.requestId, columns }
+    band = { requestId: e.requestId, columns, isCollapsed: e.props.isCollapsed }
+    isDirty = false
 
-    return <Raster key="sky" columns={columns} rows={BAND_ROWS} cells={frame(columns, seconds(), palette())} />
+    return <Raster key="sky" columns={columns} rows={BAND_ROWS} cells={frame(columns, clock, shownLevel(), palette())} />
   })
 
   on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
